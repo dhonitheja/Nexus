@@ -1,6 +1,6 @@
 # Nexus Observability Platform
 [![Enterprise Ready](https://img.shields.io/badge/Status-Enterprise%20Ready-green)]()
-[![License](https://img.shields.io/badge/License-MIT-blue)]()
+
 
 **Nexus** is a high-performance, self-hosted observability platform designed to provide a comprehensive replacement for commercial tools like Splunk and Datadog. Built for scale, security, and developer experience.
 
@@ -109,6 +109,4 @@ cd backend
 go run main.go
 ```
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
