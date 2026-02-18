@@ -8,6 +8,31 @@
 
 The platform has passed the **Final Enterprise Hardening** gate and is ready for controlled beta deployment in production environments.
 
+## 📸 Screenshots
+
+| Enterprise Dashboard | Infrastructure Metrics |
+|:---:|:---:|
+| ![Dashboard](docs/images/dashboard.png) | ![Metrics](docs/images/metrics.png) |
+
+| Visual Analytics | Prometheus Alerts |
+|:---:|:---:|
+| ![Analytics](docs/images/visual_analytics.png) | ![Alerts](docs/images/prometheus.png) |
+
+## 💡 Why Nexus?
+
+*   💸 **Stop Paying per GB**: Self-hosted means no massive Datadog/Splunk bills. You only pay for infrastructure.
+*   ⚡ **Blazing Fast**: Built on **ClickHouse** ensuring sub-second queries even on billions of logs.
+*   🔓 **No Vendor Lock-in**: Your data lives in open formats. You own the database, the pipeline (Redpanda), and the UI.
+*   🛠️ **Do It Yourself**: Complete control over retention, sampling, and security policies.
+
+## 🤝 Request for Feedback
+I am actively looking for community feedback on:
+1.  **Ingestion Performance**: How does the Go API handle your peak loads?
+2.  **UX Improvement**: Is the visual analytics search intuitive?
+3.  **Deployment**: Any friction setting this up in your K8s/Docker environment?
+
+> Please open an Issue or Discussion if you have ideas!
+
 ## 🏗️ Architecture & Tech Stack
 
 Nexus leverages a modern, cloud-native stack optimized for high throughput and low latency:
