@@ -61,6 +61,11 @@ Nexus leverages a modern, cloud-native stack optimized for high throughput and l
 *   Node.js 18+ (for local frontend dev)
 *   Go 1.21+ (for local backend dev)
 
+### 🖥️ Minimum Server Requirements
+*   **CPU**: 2+ Cores
+*   **RAM**: 4 GB (8 GB Recommended for Production)
+*   **Disk**: Fast SSD (NVMe is highly recommended for ClickHouse performance)
+
 ### Run with Docker (Recommended)
 Deploy the full stack including all infrastructure dependencies:
 
@@ -74,7 +79,7 @@ docker-compose ps
 
 ### Access Points
 | Service | URL | Credentials (Default) |
-| bound | :--- | :--- |
+| :--- | :--- | :--- |
 | **Web UI** | `http://localhost:3000` | N/A |
 | **API Gateway** | `http://localhost:8080` | N/A |
 | **ClickHouse** | `http://localhost:8123` | N/A |
