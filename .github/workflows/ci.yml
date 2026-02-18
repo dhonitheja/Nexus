@@ -68,11 +68,13 @@ jobs:
       with:
         context: ./backend
         push: true
-        tags: nexus/api:latest,nexus/api:${{ github.sha }}
+        tags: ${{ secrets.DOCKER_USERNAME }}/nexus-api:latest,${{ secrets.DOCKER_USERNAME }}/nexus-api:${{ github.sha }}
+
     
     - name: Build and Push Frontend
       uses: docker/build-push-action@v4
       with:
         context: .
         push: true
-        tags: nexus/frontend:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/nexus-frontend:latest
+
