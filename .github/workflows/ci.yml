@@ -36,11 +36,13 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 20
-        cache: 'npm'
+        # cache: 'npm' # Disabled because package-lock.json might be missing
+
 
     - name: Build Frontend
       run: |
-        npm ci
+        npm install
+
         npm run build
         # Run tests (if available)
         # npm test
