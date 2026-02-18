@@ -1,0 +1,63 @@
+groups:
+  - name: nexus.downtime
+    interval: 30s
+    rules:
+      # API is completely down
+      - alert: NexusAPIDown
+        expr: up{job="nexus-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 Nexus API is DOWN"
+          description: "The Nexus API has been unreachable for more than 1 minute. Immediate action required."
+
+      # High error rate (>5% of requests are errors)
+      - alert: HighErrorRate
+        expr: rate(nexus_ingestion_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ High Ingestion Error Rate"
+          description: "More than 5% of log ingestion requests are failing. Check Kafka connectivity."
+
+      # Query latency too high (P95 > 10s)
+      - alert: SlowQueries
+        expr: histogram_quantile(0.95, rate(nexus_query_duration_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Slow Query Performance"
+          description: "95th percentile query latency exceeds 10 seconds. Check ClickHouse load."
+
+      # ClickHouse is down
+      - alert: ClickHouseDown
+        expr: up{job="clickhouse"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 ClickHouse Database is DOWN"
+          description: "ClickHouse has been unreachable for 1 minute. All queries will fail."
+
+      # Kafka (Redpanda) lag is growing
+      - alert: KafkaLagHigh
+        expr: sum(kafka_consumer_group_lag) > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Kafka Consumer Lag is High"
+          description: "More than 10,000 messages are unprocessed. Ingestion pipeline may be backed up."
+
+      # Redis is down (rate limiting and caching will fail)
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 Redis is DOWN"
+          description: "Redis is unreachable. Rate limiting and query caching are disabled."

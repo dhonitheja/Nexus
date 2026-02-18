@@ -1,0 +1,67 @@
+global:
+  resolve_timeout: 5m
+  # How long to wait before sending a resolved notification
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'nexus-alerts@yourdomain.com'
+  smtp_auth_username: 'nexus-alerts@yourdomain.com'
+  smtp_auth_password: 'YOUR_APP_PASSWORD'  # Use Gmail App Password
+
+# Routing tree — where to send which alerts
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s        # Wait 30s to batch alerts together
+  group_interval: 5m     # Wait 5m before sending new alerts for same group
+  repeat_interval: 1h    # Re-notify every 1h if still firing
+  receiver: 'slack-critical'  # Default receiver
+
+  routes:
+    # Critical alerts → Slack + Email immediately
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      continue: true  # Also send to email
+
+    # Warning alerts → Slack only
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+
+receivers:
+  # Critical: Slack + Email
+  - name: 'slack-critical'
+    slack_configs:
+      - api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Replace with your Slack webhook
+        channel: '#nexus-alerts'
+        title: '{{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        send_resolved: true
+    email_configs:
+      - to: 'oncall@yourdomain.com'
+        subject: '[NEXUS] {{ .CommonAnnotations.summary }}'
+        body: |
+          Alert: {{ .CommonAnnotations.summary }}
+          
+          {{ .CommonAnnotations.description }}
+          
+          Status: {{ .Status }}
+          Time: {{ .StartsAt }}
+
+  # Warnings: Slack only
+  - name: 'slack-warnings'
+    slack_configs:
+      - api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Replace with your Slack webhook
+        channel: '#nexus-alerts'
+        title: '{{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+        color: 'warning'
+        send_resolved: true
+
+# Silence noisy alerts during maintenance
+inhibit_rules:
+  # If API is down, suppress downstream alerts (ClickHouse, Redis, etc.)
+  - source_match:
+      alertname: 'NexusAPIDown'
+    target_match_re:
+      alertname: '(SlowQueries|HighErrorRate)'
+    equal: ['job']

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: nexus-observability
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+  serviceName: zookeeper
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: zookeeper:3.8
+        ports:
+        - containerPort: 2181
+          name: client
+        - containerPort: 2888
+          name: server
+        - containerPort: 3888
+          name: leader-election
+        env:
+        - name: ZOO_MY_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        # Simple startup script to parse ordinal from pod name for ZOO_MY_ID (zookeeper-0 -> 1)
+        command:
+        - sh
+        - -c
+        - "export ZOO_MY_ID=$(( ${HOSTNAME##*-} + 1 )) && /docker-entrypoint.sh zkServer.sh start-foreground"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 2181
+    name: client
+  - port: 2888
+    name: server
+  - port: 3888
+    name: leader-election
+  clusterIP: None
+  selector:
+    app: zookeeper

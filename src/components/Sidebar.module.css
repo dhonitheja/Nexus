@@ -1,0 +1,110 @@
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 1.5rem;
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur));
+    z-index: 50;
+}
+
+.logoContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+}
+
+.logoIcon {
+    width: 32px;
+    height: 32px;
+    background: var(--color-primary);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.logoText {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--color-text-muted);
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.navItem:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.active {
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--color-primary);
+    border-color: rgba(88, 166, 255, 0.2);
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.1);
+}
+
+.active icon {
+    transform: scale(1.1);
+}
+
+.status {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: rgba(33, 38, 45, 0.5);
+    border: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.statusIndicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    display: inline-block;
+    margin-right: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(63, 185, 80, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+    }
+}

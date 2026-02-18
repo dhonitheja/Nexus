@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env*
+backend
+infrastructure
+k8s
+scripts
+tests
+.github

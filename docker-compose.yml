@@ -1,0 +1,166 @@
+version: '3.9'
+
+services:
+  # ==========================================
+  # CORE SERVICES
+  # ==========================================
+
+  # The main backend API (Traffic Controller)
+  nexus-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: nexus/api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - VICTORIA_METRICS_URL=http://victoriametrics:8428
+      - KAFKA_BROKERS=redpanda:9092
+    depends_on:
+      - clickhouse
+      - victoriametrics
+      - redpanda
+    restart: unless-stopped
+
+  # The React Frontend (Web Interface)
+  nexus-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus/frontend:latest
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - nexus-api
+
+  # ==========================================
+  # DATA INFRASTRUCTURE
+  # ==========================================
+
+  # Log Storage (Columnar DB)
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123" # HTTP
+      - "9000:9000" # Native
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  # Metrics Storage (TSDB)
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "8428:8428"
+    volumes:
+      - victoriametrics_data:/victoria-metrics-data
+    command:
+      - "-storageDataPath=/victoria-metrics-data"
+      - "-retentionPeriod=1m"
+
+  # Event Buffer (Kafka Compatible)
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --memory
+      - 1G
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --check=false
+    ports:
+      - "18081:18081"
+      - "18082:18082"
+      - "19092:19092"
+      - "9092:9092"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+
+  # ==========================================
+  # IDENTITY & ACCESS
+  # ==========================================
+
+  # Authentication Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=password
+    command:
+      - start-dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
+  # Database for Keycloak
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Caching Layer (Query Performance)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+  # ==========================================
+  # ALERTING STACK
+  # ==========================================
+
+  # Prometheus — scrapes metrics and evaluates alert rules
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/prometheus/rules:/etc/prometheus/rules
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Alertmanager — routes alerts to Slack/Email/PagerDuty
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infrastructure/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
+  victoriametrics_data:
+  redpanda_data:
+  postgres_data:
+  prometheus_data:

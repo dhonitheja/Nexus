@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+  # Alertmanager connection
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Load alert rules
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Scrape Nexus API metrics
+  - job_name: 'nexus-api'
+    static_configs:
+      - targets: ['nexus-api:8080']
+    metrics_path: /metrics
+
+  # Scrape VictoriaMetrics itself
+  - job_name: 'victoriametrics'
+    static_configs:
+      - targets: ['victoriametrics:8428']
+
+  # Scrape Redpanda (Kafka) metrics
+  - job_name: 'redpanda'
+    static_configs:
+      - targets: ['redpanda:9644']
+
+  # Scrape Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']

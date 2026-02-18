@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+  namespace: nexus-observability
+spec:
+  serviceName: redpanda
+  replicas: 1 # Scale to 3 for HA
+  selector:
+    matchLabels:
+      app: redpanda
+  template:
+    metadata:
+      labels:
+        app: redpanda
+    spec:
+      containers:
+      - name: redpanda
+        image: docker.redpanda.com/redpandadata/redpanda:latest
+        command:
+        - redpanda
+        - start
+        - --smp=1
+        - --memory=1G
+        - --reserve-memory=0M
+        - --overprovisioned
+        - --node-id=0
+        - --check=false
+        - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+        ports:
+        - containerPort: 9092
+          name: kafka
+        volumeMounts:
+        - name: redpanda-data
+          mountPath: /var/lib/redpanda/data
+  volumeClaimTemplates:
+  - metadata:
+      name: redpanda-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 9092
+    name: kafka
+  selector:
+    app: redpanda
+  clusterIP: None

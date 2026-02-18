@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: nexus-observability
+spec:
+  replicas: 1 # Scale to 2 for HA
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:latest
+        env:
+        - name: KEYCLOAK_ADMIN
+          value: admin
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          value: admin
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://postgres.nexus-observability.svc.cluster.local:5432/keycloak
+        - name: KC_DB_USERNAME
+          value: keycloak
+        - name: KC_DB_PASSWORD
+          value: password123
+        - name: KC_HTTP_ENABLED
+          value: "true"
+        - name: KC_HOSTNAME
+          value: "keycloak.nexus.local" # Adjust for prod hostname
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
+        command: ["/opt/keycloak/bin/kc.sh", "start-dev"]
+        ports:
+        - containerPort: 8080
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: keycloak
+  type: ClusterIP

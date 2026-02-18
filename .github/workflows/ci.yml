@@ -1,0 +1,76 @@
+
+name: Nexus CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Test Backend
+      run: |
+        cd backend
+        go mod tidy
+        go mod verify
+        go test -v ./...
+
+    - name: Build Backend
+      run: |
+        cd backend
+        go build -v .
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        cache: 'npm'
+
+    - name: Build Frontend
+      run: |
+        npm ci
+        npm run build
+        # Run tests (if available)
+        # npm test
+
+  docker-build:
+    name: Build & Push Images
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    # Login to Docker Hub (Secrets configured in GH Actions)
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push API
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: nexus/api:latest,nexus/api:${{ github.sha }}
+    
+    - name: Build and Push Frontend
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: nexus/frontend:latest

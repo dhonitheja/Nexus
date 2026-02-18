@@ -1,0 +1,30 @@
+
+groups:
+- name: NexusAlerts
+  rules:
+  - alert: HighIngestionLatency
+    expr: rate(nexus_ingestion_errors_total[5m]) > 5
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Ingestion Error Rate High"
+      description: "More than 5 ingestion errors per second in last 5m."
+
+  - alert: HighQueryLatency
+    expr: histogram_quantile(0.99, rate(nexus_query_duration_seconds_bucket[5m])) > 2.0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Query Latency Degraded"
+      description: "P99 Query Latency > 2s."
+
+  - alert: KafkaConsumerLag
+    # Assuming Kafka metrics are exported
+    expr: kafka_consumergroup_lag > 10000
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Kafka Lag Growing"

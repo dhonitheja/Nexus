@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: nexus-observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: keycloak
+        - name: POSTGRES_USER
+          value: keycloak
+        - name: POSTGRES_PASSWORD
+          value: password123
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-data
+        emptyDir: {} 
+        # For production, replace emptyDir with PersistentVolumeClaim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres
+  clusterIP: None # Headless service for direct pod addressing

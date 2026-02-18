@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vmstorage
+  namespace: nexus-observability
+spec:
+  serviceName: vmstorage
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vmstorage
+  template:
+    metadata:
+      labels:
+        app: vmstorage
+    spec:
+      containers:
+      - name: vmstorage
+        image: victoriametrics/vmstorage:stable
+        args:
+        - "-storageDataPath=/vm-data"
+        - "-retentionPeriod=30d"
+        ports:
+        - containerPort: 8482
+          name: http
+        - containerPort: 8400
+          name: insert
+        - containerPort: 8401
+          name: select
+        volumeMounts:
+        - name: storage-data
+          mountPath: /vm-data
+  volumeClaimTemplates:
+  - metadata:
+      name: storage-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmstorage
+  namespace: nexus-observability
+spec:
+  clusterIP: None
+  ports:
+  - port: 8400
+    name: insert
+  - port: 8401
+    name: select
+  selector:
+    app: vmstorage
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vminsert
+  namespace: nexus-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vminsert
+  template:
+    metadata:
+      labels:
+        app: vminsert
+    spec:
+      containers:
+      - name: vminsert
+        image: victoriametrics/vminsert:stable
+        args:
+        - "-storageNode=vmstorage-0.vmstorage.nexus-observability.svc.cluster.local:8400"
+        - "-storageNode=vmstorage-1.vmstorage.nexus-observability.svc.cluster.local:8400"
+        ports:
+        - containerPort: 8480
+          name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vminsert
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 8480
+    name: http
+  selector:
+    app: vminsert
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmselect
+  namespace: nexus-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vmselect
+  template:
+    metadata:
+      labels:
+        app: vmselect
+    spec:
+      containers:
+      - name: vmselect
+        image: victoriametrics/vmselect:stable
+        args:
+        - "-storageNode=vmstorage-0.vmstorage.nexus-observability.svc.cluster.local:8401"
+        - "-storageNode=vmstorage-1.vmstorage.nexus-observability.svc.cluster.local:8401"
+        ports:
+        - containerPort: 8481
+          name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmselect
+  namespace: nexus-observability
+spec:
+  ports:
+  - port: 8481
+    name: http
+  selector:
+    app: vmselect
